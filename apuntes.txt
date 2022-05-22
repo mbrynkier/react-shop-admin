@@ -1,0 +1,352 @@
+Para crear el projecto con next
+npx create-next-app <nombre-de-tu-app>
+-------------------------------------------------------------------------------
+Configuraciones de ESLint y prettier
+
+Instalamos eslint y prettier
+npm install eslint-config-prettier eslint-plugin-jsx-a11y eslint-plugin-prettier prettier -D
+
+agregamos un archivo llamado .eslintrc.js para hacer una configuracion personalizada
+
+module.exports = {
+  env: {
+    browser: true,
+    amd: true,
+    node: true,
+    es6: true,
+  },
+  extends: [
+    "eslint:recommended",
+    "plugin:jsx-a11y/recommended",
+    "plugin:prettier/recommended",
+    "next",
+    "next/core-web-vitals",
+  ],
+  rules: {
+    semi: ["error", "always"],
+  },
+};
+
+agregamos un archivo llamado prettier.config.js
+
+module.exports = {
+  semi: true,
+  singleQuote: true,
+  printWidth: 200,
+  tabWidth: 2,
+  trailingComma: "es5",
+  bracketSpacing: true,
+};
+
+En package.json le agregamos:
+"lint:fix": "eslint src/ --fix"
+
+-------------------------------------------------------------------------------------------------------
+Integrando PostCSS y TailwindCSS a nuestro proyecto
+
+Instalamos TailwindCss y PostCss
+--npm install tailwindcss postcss autoprefixer
+
+para inicializarlo y que nos cree los archivos corremos:
+--npx tailwindcss init -p
+Nos genera tailwind.config.js y postcss.config.js. Modificamos el tailwind.config.js
+
+Le agregamos los colors y definimos los archivos que vamos a trabajar
+const colors = required('tailwindcss/colors')
+
+module.exports = {
+  content: ['./src/**/*{html,js,jsx}'],
+  theme: {
+    colors: {
+      ...colors,
+    }
+  },
+};
+
+Creamos un archivo llamado .env.local y le ponemos.
+TAILWIND_MODE=watch
+
+Creamos un archivo dentro de styles llamado tailwind.css y le ponemos.
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+Eliminamos los otros estilos y dejamos solamente tailwind.css
+Como borramos los estilos tenemos que modificar el _app.js y que importe el tailwind.css
+
+fuimos a la pagina de tailwind https://play.tailwindcss.com/, copiamos lo que estaba en el html y lo reemplazamos todo en el index.js
+
+---------------------------------------------------------------------------------------------
+Configuración del archivo jsconfig.json
+
+creamos jsconfig.json para crear el baseUrl y los alias.
+{
+    "compilerOptions": {
+        "baseUrl": "src",
+        "paths": {
+            "@styles/*": ["styles/*"], 
+        }
+    }
+}
+
+--------------------------------------------------------------------------------------------
+Cómo integrar componentes predefinidos con TailwindUI
+
+Vamos a la siguiente pagina para crear una pagina. Copiamos el codigo en React y lo pegamos en index.js
+Vemos que usa headlessui y heroicons. Entramos en la documentacion de cada uno para ver como hay que instalarlo
+--npm install @heroicons/react
+--npm install @headlessui/react
+
+--------------------------------------------------------------------------------------------
+Commons components
+
+vamos a la siguiente pagina https://github.dev/gndx/nextjs-ui.
+Y copiamos todo lo que esta dentro de la carpeta common, components y dashboard.(Creamos los archivos en visual y copiamos el codigo)
+
+--------------------------------------------------------------------------------------------
+Creación del layout principal e integración de los Page Components
+
+Creamos la carpeta de Layout dentro de src y le generamos un archivo llamado MainLayout.js
+Y creamos todo el layout que se va a respetar en todas las paginas:
+import Header from "@components/Header";
+import Nav from "@common/Nav";
+
+export default function MainLayout({ children }) {
+  return (
+    <>
+      <div className="min-h-full">
+        <Header/>
+        <Nav/>
+        <main>
+          <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">{children}</div>
+        </main>
+      </div>
+    </>
+  );
+}
+
+Y este MainLayout lo importamos desde _app.js y lo usamos
+
+----------------------------------------------------------------------------------------------
+Creando la Logica del componente login
+
+Creamos un archivo llamado login.js que llama a /components/LoginPage.js
+Generamos un useRef y un submitHandle. Y modificamos dentro de formulario y en donde dice los input de mail y password
+
+const emailRef = useRef(null);
+  const passwordRef = useRef(null);
+
+  const submitHandle = (event) => {
+    event.preventDefault();
+    const email = emailRef.current.value;
+    const password = passwordRef.current.value;
+  };
+
+--------------------------------------------------------------------------------------------
+Presentación de la API
+
+https://api.escuelajs.co/docs/#/
+Agregamos en .env.local:
+NEXT_PUBLIC_API_URL=https://api.escuelajs.co
+NEXT_PUBLIC_API_VERSION=v1
+
+Dentro de src creamos una carpeta services/api y adentro un index.js
+Y aca vamos a programar todos los endpoints que va a usar la API
+
+creamos un .env-example en donde ponemos las variables de ejemplo asi otras personas saben lo que tienen que tener.
+
+----------------------------------------------------------------------------------------------
+Creación del custom hook useAuth
+
+Creamos carpeta de hook.
+Instalamos js-cookie y axios.
+--npm i js-cookie
+--npm i axios
+
+Dentro de la carpeta de hook creamos el useAuth donde creamos el custom hook.
+
+Ahora vamos a _app.js y creamos el <ProviderAuth> 
+
+----------------------------------------------------------------------------------------------
+Autenticándonos en la API usando Axios
+
+En hooks/useAuth.js creamos la llamada a la api
+Y luego lo agregamos en LoginPage usando:
+import { useAuth } from '@hooks/useAuth';
+const auth = useAuth();
+auth.signIn(email,password).then(() => {
+      console.log('Login success')
+    });
+
+Lo ejecutamos y vemos si nos devuelve el token
+
+----------------------------------------------------------------------------------------------
+Obteniendo el token de la API
+
+En useAuth seteamos la cookie con el token
+Cookie.set('token', access_token, {expires: 5 });
+
+----------------------------------------------------------------------------------------------
+Guardado del token en una cookie para mantener la sesión
+
+Vamos a hacer la peticion para que nos traiga los datos de nuestro usuario
+En useAuth escribimos:
+const token = access_token;
+Axios.defaults.headers.Authorization = `Bearer ${token}`;
+const {data: user} = await Axios.get(endPoints.auth.profile);
+setUser(user);
+
+---------------------------------------------------------------------------------------------
+Usando nuestro useAuth para cargar la información del usuario
+
+en LoginPage hacemos:
+import { useRouter } from 'next/router';
+
+y cuando se haga login lo envie al dashboard
+router.push('/dashboard')
+
+dentro de Header.js usamos el useAuth para recuperar el usuario, y asi obtener el nombre, email y avatar.
+
+---------------------------------------------------------------------------------------------
+Obteniendo la lista de productos desde la API
+
+Creamos una archivo llamado useFetch.js en donde hacemos una funcion para que vaya a buscar a la api nuestras peticiones.
+Modficamos el index.js para que obtengamos nuestros productos y podamos mostrarlo en pantalla.
+
+---------------------------------------------------------------------------------------------
+Creando el componente Chart
+
+instalamos el componente Chart
+--npm i chart.js react-chartjs-2
+
+Creamos un common llamado Chart.js y le configuramos lo del dashboard
+
+--------------------------------------------------------------------------------------------
+Implementación de nuestro componente Chart en el dashboard
+
+Vamos al dashboard e integramos lo de Chart.js
+Mapeamos las categorias por el nombre y con el countOcurrences nos fijamos cuanto hay de cada uno
+
+  const categoryNames = products?.map((product) => product.category);
+  const categoryCount = categoryNames?.map((category) => category.name);
+
+  const countOccurrences = (array) => array.reduce((prev, curr) => ((prev[curr] = ++prev[curr]|| 1), prev), {})
+
+  const data = {
+    datasets: [{
+      label: 'Categories',
+      data: countOccurrences(categoryCount),
+      borderWidth: 2,
+      backgroundColor: ['#ffbb11', '#c0c0c0', '#50af95', '#f3ba2f', '#2a71d0']
+    }]
+  }
+
+  return (
+    <>
+      <Chart className="mb-8 mt-2" chartData={data}/>
+
+--------------------------------------------------------------------------------------------
+Conexión del modal para crear productos
+
+Conectamos el modal al producto.js
+importamos:
+import Modal from '@common/Modal';
+agrtegamos el estado:
+const [open, setOpen ] = useState(false);
+al boton le ponemos un onclick:
+onClick={() => setOpen(true)}
+
+y al final ponemos el modal.
+ <Modal open={open} setOpen={setOpen}>
+        <h1>Hola Mundo</h1>
+      </Modal>
+
+------------------------------------------------------------------------------------------
+Construcción del modal para crear productos
+
+En el modal ponemos el <FormProduct></FormProduct>
+
+Ya que no se muestra correctamente instalamos lo siguiente:
+npm install tailwindcss/forms
+
+------------------------------------------------------------------------------------------
+Inserción de los datos del producto en la API
+
+Agregamos un archivo llamado products.js en services/api, que se encarga del post de los productos.
+y lo llamamos en FormProduct
+
+------------------------------------------------------------------------------------------
+Creación del componente Alert
+
+Agregamos un allProducts en services/api/Index.js
+y en dashboard/products.js agregamos un useEffect para que liste los cambios en products una vez que se agrega
+
+Creamos un archivo en common/Alert.js y copiamos la logica en  https://gist.github.com/gndx/89582bf88d4ea223bffe3784037a3e7c#file-alert-jsx
+
+Creamos un hook llamado useAlert.js y lo utilizamos en dashboard/products.js.
+import useAlert from '@hooks/useAlert';
+import Alert from '@common/Alert';
+
+modificamos la forma que lo llama FormProduct en product.js
+
+------------------------------------------------------------------------------------------
+Implementación de nuestro componente Alert
+
+Como a FormProduct le pasamos el setOpen y setAlert, lo configuramos.
+
+ addProduct(data).then((response) => {
+            setAlert({
+              active: true,
+              message: 'Product added succesfully',
+              type: 'success',
+              autoClose: false,
+            });
+            setOpen(false);
+        }).catch((error) =>{
+          setAlert({
+            active: true,
+            message: error.message,
+            type: 'error',
+            autClose: false
+          })
+        })
+
+------------------------------------------------------------------------------------------
+Eliminado de productos en la API 
+dentro de services/api/products.js agregamos una funcion para borrar y lo exportamos
+Lo usamos dentro de dashboard/products, y hacemos en onclick para el delete.
+
+------------------------------------------------------------------------------------------
+Creación y cargado de datos para actualizar un producto
+
+Dentro de dashboard creamos una una carpeta y archivo /dashboard/edit/[id].js
+
+Cuando esta con [id] significa que es un valor que se pasa por el link, y lo capturas usando useRouter, y useRouter.query
+En esta pantalla recuperamos el id del link y buscamos el producto y se lo pasamos al FormProduct.
+
+Dentro del FormProduct, recibe el producto y los input le ponemos un default value.
+
+-------------------------------------------------------------------------------------------
+Actualizado del producto en la API
+
+dentro de services/api/product.js agregamos una funcion llamada updateProducts para poder usarlo dentro de FormProduct
+En FormProduct chequeamos que ya exista el producto si es asi, llamamos a actualizar sino llamamos a agregar.
+
+Luego usamos link para cuando apretamos edit en products lo madamos a editar
+import Link from 'next/link';
+<Link href={`/edit/${product.id}`} className="text-indigo-600 hover:text-indigo-900">
+  Edit
+</Link>
+
+agregamos un router para cuando confirme la modificacion del producto lo mande nuevamente a la pantalla de productos.
+
+-------------------------------------------------------------------------------------------
+Implementación del logout
+
+Creamos una funcion dentro de useAuth para cuando el usuario quiera hacer logout.
+const logout = () =>{
+    Cookie.remove('token');
+    setUser(null);
+    delete axios.defaults.headers.Authorization;
+    window.location.href = '/login'
+  }
