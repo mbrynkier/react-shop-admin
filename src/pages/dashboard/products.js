@@ -16,13 +16,13 @@ export default function Products() {
 
   useEffect(() => {
     async function getProducts(){
-      const response = await axios.get(endPoints.products.allProducts)
+      const response = await axios.get(endPoints.products.allProducts);
       setProducts(response.data);
     }
     try{
       getProducts();
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
   }, [alert]);
 
@@ -35,7 +35,7 @@ export default function Products() {
         autoClose: true,
       });
     });
-  } 
+  }; 
 
   return (
     <>

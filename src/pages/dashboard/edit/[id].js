@@ -5,7 +5,7 @@ import axios from 'axios';
 import endPoints from '@services/api';
 
 export default function Edit() {
-  const [product, setProduct] = useState({})
+  const [product, setProduct] = useState({});
   const router = useRouter();
 
   useEffect(() => {
